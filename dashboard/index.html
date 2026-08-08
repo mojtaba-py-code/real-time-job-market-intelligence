@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Real-Time Job Market Intelligence Platform - market overview, skill trends and salary analytics." />
+  <title>Job Market Intelligence</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <div>
+        <h1>Job Market Intelligence</h1>
+        <p class="subtitle" id="subtitle">Loading market data&hellip;</p>
+      </div>
+    </div>
+
+    <div class="controls">
+      <label class="control">
+        <span>Window</span>
+        <select id="window-select">
+          <option value="7">7 days</option>
+          <option value="30" selected>30 days</option>
+          <option value="90">90 days</option>
+          <option value="180">180 days</option>
+        </select>
+      </label>
+
+      <label class="control">
+        <span>Country</span>
+        <select id="country-select">
+          <option value="">All countries</option>
+        </select>
+      </label>
+
+      <label class="control">
+        <span>Segment</span>
+        <select id="segment-select">
+          <option value="">All segments</option>
+        </select>
+      </label>
+
+      <label class="control control-key">
+        <span>API key</span>
+        <input id="api-key" type="password" placeholder="optional" autocomplete="off" spellcheck="false" />
+      </label>
+
+      <button id="refresh" class="button" type="button">Refresh</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="banner" class="banner" hidden></section>
+
+    <section class="kpi-grid" aria-label="Headline metrics">
+      <article class="kpi"><h2>Active jobs</h2><p id="kpi-active">&mdash;</p><span id="kpi-active-sub"></span></article>
+      <article class="kpi"><h2>New today</h2><p id="kpi-today">&mdash;</p><span id="kpi-today-sub"></span></article>
+      <article class="kpi"><h2>This week</h2><p id="kpi-week">&mdash;</p><span></span></article>
+      <article class="kpi"><h2>Companies hiring</h2><p id="kpi-companies">&mdash;</p><span id="kpi-countries"></span></article>
+      <article class="kpi"><h2>Top skill</h2><p id="kpi-skill">&mdash;</p><span id="kpi-skill-sub"></span></article>
+      <article class="kpi"><h2>Fastest growing</h2><p id="kpi-growth">&mdash;</p><span id="kpi-growth-sub"></span></article>
+      <article class="kpi"><h2>Median salary</h2><p id="kpi-salary">&mdash;</p><span id="kpi-salary-sub"></span></article>
+      <article class="kpi"><h2>Remote share</h2><p id="kpi-remote">&mdash;</p><span id="kpi-quality"></span></article>
+    </section>
+
+    <section class="panel-grid">
+      <article class="panel panel-wide">
+        <header><h2>Postings over time</h2><span class="hint">daily volume and 7-day moving average</span></header>
+        <div id="chart-volume" class="chart"></div>
+      </article>
+
+      <article class="panel">
+        <header><h2>Skill demand</h2><span class="hint">share of postings mentioning each skill</span></header>
+        <div id="chart-skills" class="chart"></div>
+      </article>
+
+      <article class="panel">
+        <header><h2>Skill growth</h2><span class="hint">change against the previous window</span></header>
+        <div id="list-trends" class="list"></div>
+      </article>
+
+      <article class="panel">
+        <header><h2>Emerging technologies</h2><span class="hint">small base, accelerating demand</span></header>
+        <div id="list-emerging" class="list"></div>
+      </article>
+
+      <article class="panel">
+        <header><h2>Work arrangement</h2><span class="hint">remote / hybrid / on-site</span></header>
+        <div id="chart-remote" class="chart chart-centered"></div>
+      </article>
+
+      <article class="panel">
+        <header><h2>Seniority</h2><span class="hint">distribution of experience levels</span></header>
+        <div id="chart-seniority" class="chart"></div>
+      </article>
+
+      <article class="panel">
+        <header><h2>Top countries</h2><span class="hint">postings by country</span></header>
+        <div id="chart-countries" class="chart"></div>
+      </article>
+
+      <article class="panel">
+        <header><h2>Salary distribution</h2><span class="hint">annualised, observed salaries only</span></header>
+        <div id="chart-salary" class="chart"></div>
+      </article>
+
+      <article class="panel panel-wide">
+        <header><h2>Companies hiring</h2><span class="hint">most open postings in the window</span></header>
+        <div id="table-companies" class="table-wrap"></div>
+      </article>
+
+      <article class="panel panel-wide" id="explorer-panel">
+        <header>
+          <h2>Skill explorer</h2>
+          <label class="control control-inline">
+            <span>Skill</span>
+            <select id="skill-select"></select>
+          </label>
+        </header>
+        <div id="explorer" class="explorer"></div>
+      </article>
+    </section>
+  </main>
+
+  <footer>
+    <p>
+      Data derived from publicly available job postings.
+      Salary figures cover disclosed compensation only and are never imputed.
+      <a href="/docs">API documentation</a>
+    </p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

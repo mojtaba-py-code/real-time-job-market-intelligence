@@ -1,0 +1,104 @@
+# Data sources.
+#
+# Only configure sources that explicitly permit automated access. The platform
+# honours robots.txt, rate limits itself per host and never bypasses
+# authentication, CAPTCHAs or anti-bot systems.
+#
+# Secrets are NEVER written here. A source that needs a credential declares the
+# name of an environment variable via `api_key_env`.
+
+sources:
+  # ---------------------------------------------------------------------- #
+  # Always available: a deterministic market simulator with known trends.
+  # Used for local development, demos, tests and benchmarks.
+  # ---------------------------------------------------------------------- #
+  - name: synthetic
+    kind: synthetic
+    enabled: true
+    schedule_seconds: 900
+    batch_size: 500
+    options:
+      count: 2000
+      days: 180
+      seed: 20240101
+      salary_disclosure_rate: 0.55
+      duplicate_rate: 0.06
+      malformed_rate: 0.02
+
+  # ---------------------------------------------------------------------- #
+  # A local dataset dropped into data/raw/ by the user or by
+  # `jobintel generate --output data/raw/jobs.jsonl`.
+  # ---------------------------------------------------------------------- #
+  - name: local_dataset
+    kind: dataset
+    enabled: false
+    schedule_seconds: 3600
+    batch_size: 1000
+    options:
+      path: raw/jobs.jsonl
+      mapping:
+        source_job_id: id
+        title: title
+        description: description
+        company: company
+        location: location
+        url: url
+        salary: salary
+        employment_type: employment_type
+        remote_status: remote_status
+        published_at: published_at
+
+  # ---------------------------------------------------------------------- #
+  # Example: a public JSON API. Verify the provider's terms before enabling.
+  # ---------------------------------------------------------------------- #
+  - name: public_api
+    kind: api
+    enabled: false
+    schedule_seconds: 900
+    batch_size: 500
+    options:
+      url: https://example.org/api/jobs
+      records_path: results
+      # api_key_env: PUBLIC_API_TOKEN     # read from the environment only
+      pagination:
+        mode: page
+        page_param: page
+        size_param: per_page
+        size: 100
+      mapping:
+        source_job_id: id
+        title: title
+        description: description
+        company: company.name
+        location: location.display_name
+        url: absolute_url
+        salary: salary_text
+        employment_type: contract_type
+        remote_status: workplace_type
+        published_at: created_at
+
+  # ---------------------------------------------------------------------- #
+  # Example: an RSS/Atom job feed.
+  # ---------------------------------------------------------------------- #
+  - name: example_feed
+    kind: rss
+    enabled: false
+    schedule_seconds: 1800
+    batch_size: 200
+    options:
+      url: https://example.org/jobs.rss
+      company: Example Ltd
+
+  # ---------------------------------------------------------------------- #
+  # Example: a company career endpoint served by a common ATS.
+  # ---------------------------------------------------------------------- #
+  - name: example_careers
+    kind: career_page
+    enabled: false
+    schedule_seconds: 3600
+    batch_size: 200
+    options:
+      provider: greenhouse      # greenhouse | lever | generic
+      board: examplecompany
+      company: Example Company
+      industry: Software

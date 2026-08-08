@@ -1,0 +1,230 @@
+# Job-title normalization rules.
+#
+# Titles are the noisiest field in a job posting: "Senior Backend Python
+# Engineer (m/f/d) - Remote" has to become a comparable, canonical role.
+# The rules below are ordered by `priority` (higher wins) and are pure
+# configuration, so a new role family never requires a code change.
+#
+# The output of a match is: canonical_title + title_family + segment,
+# plus an independently detected seniority and specialization.
+
+version: 1
+
+# Fragments removed before matching (gender markers, contract notes, noise).
+noise_patterns:
+  - "\\(m/f/d\\)"
+  - "\\(m/w/d\\)"
+  - "\\(f/m/d\\)"
+  - "\\(m/f/x\\)"
+  - "\\(w/m/d\\)"
+  - "\\(h/f\\)"
+  - "\\bm/f/d\\b"
+  - "\\bm/w/d\\b"
+  - "\\(all genders\\)"
+  - "\\(remote\\)"
+  - "\\(hybrid\\)"
+  - "\\(onsite\\)"
+  - "\\(full[- ]time\\)"
+  - "\\(part[- ]time\\)"
+  - "\\(fixed[- ]term\\)"
+  - "\\(\\d+\\s*%\\)"
+  - "\\bm/f\\b"
+  - "\\bd/m/w\\b"
+  - "- remote$"
+  - "\\| .*$"
+
+seniority:
+  - level: executive
+    priority: 90
+    patterns: [cto, "chief technology officer", "chief technical officer", ceo, cio, cpo, "vp of engineering", "vice president"]
+  - level: director
+    priority: 80
+    patterns: [director, "head of engineering", "head of data", "head of"]
+  - level: manager
+    priority: 70
+    patterns: ["engineering manager", "development manager", "delivery manager", manager]
+  - level: principal
+    priority: 60
+    patterns: [principal, staff, distinguished, architect]
+  - level: lead
+    priority: 50
+    patterns: ["tech lead", "technical lead", "team lead", "team leader", lead]
+  - level: senior
+    priority: 40
+    patterns: [senior, "sr.", sr, snr, "iii", experienced]
+  - level: mid
+    priority: 30
+    patterns: ["mid level", "mid-level", "medior", "ii"]
+  - level: junior
+    priority: 20
+    patterns: [junior, "jr.", jr, "entry level", "entry-level", graduate, "new grad", associate]
+  - level: intern
+    priority: 10
+    patterns: [intern, internship, "working student", trainee, apprentice, praktikum, praktikant, "student assistant"]
+
+families:
+  - family: Data Engineering
+    segment: data_engineering
+    canonical: Data Engineer
+    priority: 95
+    patterns: ["data engineer", "analytics engineer", "big data engineer", "etl developer", "data platform", "data warehouse", "bi engineer", "business intelligence engineer"]
+
+  - family: Data Science
+    segment: data_science
+    canonical: Data Scientist
+    priority: 94
+    patterns: ["data scientist", "data science", "research scientist", "quantitative analyst", "statistician"]
+
+  - family: AI / Machine Learning
+    segment: ai_ml
+    canonical: Machine Learning Engineer
+    priority: 93
+    patterns: ["machine learning engineer", "ml engineer", "mlops engineer", "ai engineer", "applied scientist", "deep learning", "computer vision", "nlp engineer", "llm engineer"]
+
+  - family: DevOps
+    segment: devops
+    canonical: DevOps Engineer
+    priority: 92
+    patterns: ["devops", "site reliability", " sre", "platform engineer", "infrastructure engineer", "build engineer", "release engineer"]
+
+  - family: Cloud Engineering
+    segment: cloud_engineering
+    canonical: Cloud Engineer
+    priority: 91
+    patterns: ["cloud engineer", "cloud architect", "aws engineer", "azure engineer", "gcp engineer", "kubernetes engineer"]
+
+  - family: Cybersecurity
+    segment: cybersecurity
+    canonical: Security Engineer
+    priority: 90
+    patterns: ["security engineer", "security analyst", "application security", "information security", "soc analyst", "penetration tester", "security architect", "cybersecurity"]
+
+  - family: Quality Assurance
+    segment: qa
+    canonical: QA Engineer
+    priority: 89
+    patterns: ["qa engineer", "quality assurance", "test engineer", "test automation", "sdet", " tester"]
+
+  - family: Mobile Development
+    segment: mobile_development
+    canonical: Mobile Engineer
+    priority: 88
+    patterns: ["ios engineer", "ios developer", "android engineer", "android developer", "mobile developer", "mobile engineer", "react native", "flutter developer"]
+
+  - family: Frontend Engineering
+    segment: frontend_engineering
+    canonical: Frontend Engineer
+    priority: 87
+    patterns: ["frontend", "front-end", "front end", "ui engineer", "ui developer", "react developer", "react engineer", "angular developer", "vue developer", "web developer"]
+
+  - family: Fullstack Engineering
+    segment: fullstack_engineering
+    canonical: Fullstack Engineer
+    priority: 86
+    patterns: ["full stack", "fullstack", "full-stack"]
+
+  - family: Embedded Engineering
+    segment: embedded
+    canonical: Embedded Engineer
+    priority: 85
+    patterns: ["embedded", "firmware", "hardware engineer", "fpga"]
+
+  - family: Backend Engineering
+    segment: backend_engineering
+    canonical: Backend Engineer
+    priority: 84
+    patterns: ["backend", "back-end", "back end", "server side", "server-side", "api engineer", "api developer", "microservices engineer"]
+
+  - family: Product
+    segment: product
+    canonical: Product Manager
+    priority: 60
+    patterns: ["product manager", "product owner", "technical product", "program manager", "project manager", "scrum master", "business analyst"]
+
+  - family: Legacy Systems
+    segment: other
+    canonical: Legacy Systems Engineer
+    priority: 55
+    patterns: ["cobol", "mainframe", "as/400", "vb.net developer"]
+
+  - family: Software Engineering
+    segment: backend_engineering
+    canonical: Software Engineer
+    priority: 20
+    patterns: ["software engineer", "software developer", "developer", "engineer", "engineering", "programmer", "software architect", "coder"]
+
+# A technology named in the title becomes the role's specialization. When the
+# family is still unresolved, `family` here provides the fallback.
+specializations:
+  - name: Python
+    patterns: [python]
+    family: Backend Engineering
+    segment: backend_engineering
+  - name: Java
+    patterns: [java]
+    family: Backend Engineering
+    segment: backend_engineering
+  - name: JavaScript
+    patterns: [javascript, "node.js", nodejs, node]
+    family: Backend Engineering
+    segment: backend_engineering
+  - name: TypeScript
+    patterns: [typescript]
+    family: Frontend Engineering
+    segment: frontend_engineering
+  - name: React
+    patterns: [react]
+    family: Frontend Engineering
+    segment: frontend_engineering
+  - name: Angular
+    patterns: [angular]
+    family: Frontend Engineering
+    segment: frontend_engineering
+  - name: Vue.js
+    patterns: [vue]
+    family: Frontend Engineering
+    segment: frontend_engineering
+  - name: Go
+    patterns: [golang, "go developer", "go engineer"]
+    family: Backend Engineering
+    segment: backend_engineering
+  - name: Rust
+    patterns: [rust]
+    family: Backend Engineering
+    segment: backend_engineering
+  - name: C++
+    patterns: ["c++", cpp]
+    family: Embedded Engineering
+    segment: embedded
+  - name: "C#"
+    patterns: ["c#", ".net", "dotnet"]
+    family: Backend Engineering
+    segment: backend_engineering
+  - name: PHP
+    patterns: [php, laravel, symfony]
+    family: Backend Engineering
+    segment: backend_engineering
+  - name: Ruby
+    patterns: [ruby, rails]
+    family: Backend Engineering
+    segment: backend_engineering
+  - name: Scala
+    patterns: [scala]
+    family: Data Engineering
+    segment: data_engineering
+  - name: Kotlin
+    patterns: [kotlin]
+    family: Mobile Development
+    segment: mobile_development
+  - name: Swift
+    patterns: ["swift developer", "swift engineer"]
+    family: Mobile Development
+    segment: mobile_development
+  - name: SQL
+    patterns: [sql]
+    family: Data Engineering
+    segment: data_engineering
+  - name: Salesforce
+    patterns: [salesforce]
+  - name: SAP
+    patterns: [sap, abap]

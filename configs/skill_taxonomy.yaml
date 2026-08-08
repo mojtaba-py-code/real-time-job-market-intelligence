@@ -1,0 +1,704 @@
+# Hierarchical skill taxonomy.
+#
+# The NLP layer contains no hard-coded technology list: everything it can
+# recognise is declared here. Adding a technology, an alias or a whole branch
+# is a configuration change that needs no code and no redeployment of logic.
+#
+# groups .... hierarchy nodes (a skill's `parent` points at one of them)
+# skills .... leaves that can be detected in text
+#
+# Per-skill options:
+#   aliases     - additional spellings matched case-insensitively
+#   ambiguous   - the name is a common English word (Go, R, C); a match only
+#                 counts when it is delimited or qualified by tech context
+#   weight      - relative importance when scoring a posting (default 1.0)
+
+version: 2
+updated: "2024-01-01"
+
+groups:
+  - slug: software-engineering
+    name: Software Engineering
+    parent: null
+  - slug: backend
+    name: Backend
+    parent: software-engineering
+  - slug: frontend
+    name: Frontend
+    parent: software-engineering
+  - slug: mobile
+    name: Mobile
+    parent: software-engineering
+  - slug: languages
+    name: Programming Languages
+    parent: software-engineering
+  - slug: databases
+    name: Databases
+    parent: software-engineering
+  - slug: cloud
+    name: Cloud
+    parent: software-engineering
+  - slug: devops
+    name: DevOps
+    parent: software-engineering
+  - slug: data
+    name: Data
+    parent: software-engineering
+  - slug: ai-ml
+    name: AI / Machine Learning
+    parent: data
+  - slug: testing
+    name: Testing
+    parent: software-engineering
+  - slug: security
+    name: Security
+    parent: software-engineering
+  - slug: tooling
+    name: Tooling
+    parent: software-engineering
+  - slug: practices
+    name: Engineering Practices
+    parent: software-engineering
+  - slug: soft-skills
+    name: Soft Skills
+    parent: null
+
+skills:
+  # ------------------------------------------------------------------ #
+  # Programming languages
+  # ------------------------------------------------------------------ #
+  - slug: python
+    name: Python
+    category: language
+    parent: languages
+    aliases: [python3, "python 3", "python 3.x", cpython]
+    weight: 1.2
+  - slug: java
+    name: Java
+    category: language
+    parent: languages
+    aliases: [java8, "java 8", "java 11", "java 17", jvm]
+  - slug: javascript
+    name: JavaScript
+    category: language
+    parent: languages
+    aliases: [js, ecmascript, es6, es2015]
+  - slug: typescript
+    name: TypeScript
+    category: language
+    parent: languages
+    aliases: [ts]
+  - slug: go
+    name: Go
+    category: language
+    parent: languages
+    aliases: [golang]
+    ambiguous: true
+  - slug: rust
+    name: Rust
+    category: language
+    parent: languages
+  - slug: cpp
+    name: C++
+    category: language
+    parent: languages
+    aliases: ["c++", cpp, "c plus plus"]
+  - slug: csharp
+    name: "C#"
+    category: language
+    parent: languages
+    aliases: ["c#", "csharp", "c sharp"]
+  - slug: c
+    name: C
+    category: language
+    parent: languages
+    ambiguous: true
+  - slug: php
+    name: PHP
+    category: language
+    parent: languages
+  - slug: ruby
+    name: Ruby
+    category: language
+    parent: languages
+  - slug: kotlin
+    name: Kotlin
+    category: language
+    parent: languages
+  - slug: swift
+    name: Swift
+    category: language
+    parent: languages
+    ambiguous: true
+  - slug: scala
+    name: Scala
+    category: language
+    parent: languages
+  - slug: r
+    name: R
+    category: language
+    parent: languages
+    ambiguous: true
+  - slug: sql
+    name: SQL
+    category: language
+    parent: languages
+    aliases: [t-sql, pl/sql, plsql, ansi sql]
+  - slug: bash
+    name: Bash
+    category: language
+    parent: languages
+    aliases: [shell scripting, shell, zsh]
+  - slug: cobol
+    name: COBOL
+    category: language
+    parent: languages
+  - slug: vbnet
+    name: VB.NET
+    category: language
+    parent: languages
+    aliases: ["vb.net", "visual basic"]
+  - slug: elixir
+    name: Elixir
+    category: language
+    parent: languages
+  - slug: perl
+    name: Perl
+    category: language
+    parent: languages
+
+  # ------------------------------------------------------------------ #
+  # Backend frameworks
+  # ------------------------------------------------------------------ #
+  - slug: fastapi
+    name: FastAPI
+    category: framework
+    parent: backend
+    aliases: ["fast api"]
+    weight: 1.1
+  - slug: django
+    name: Django
+    category: framework
+    parent: backend
+    aliases: ["django rest framework", drf]
+  - slug: flask
+    name: Flask
+    category: framework
+    parent: backend
+  - slug: spring
+    name: Spring
+    category: framework
+    parent: backend
+    aliases: ["spring boot", springboot]
+  - slug: dotnet
+    name: .NET
+    category: framework
+    parent: backend
+    aliases: [".net", "dotnet", "asp.net", "net core", ".net core"]
+  - slug: nodejs
+    name: Node.js
+    category: framework
+    parent: backend
+    aliases: ["node.js", nodejs, "node js"]
+  - slug: express
+    name: Express
+    category: framework
+    parent: backend
+    aliases: ["express.js", expressjs]
+  - slug: rails
+    name: Ruby on Rails
+    category: framework
+    parent: backend
+    aliases: ["ruby on rails", rails]
+  - slug: laravel
+    name: Laravel
+    category: framework
+    parent: backend
+  - slug: grpc
+    name: gRPC
+    category: framework
+    parent: backend
+  - slug: graphql
+    name: GraphQL
+    category: framework
+    parent: backend
+  - slug: rest
+    name: REST
+    category: practice
+    parent: backend
+    aliases: ["rest api", "restful", "rest apis"]
+  - slug: celery
+    name: Celery
+    category: framework
+    parent: backend
+
+  # ------------------------------------------------------------------ #
+  # Frontend
+  # ------------------------------------------------------------------ #
+  - slug: react
+    name: React
+    category: framework
+    parent: frontend
+    aliases: ["react.js", reactjs]
+  - slug: angular
+    name: Angular
+    category: framework
+    parent: frontend
+    aliases: [angularjs]
+  - slug: vue
+    name: Vue.js
+    category: framework
+    parent: frontend
+    aliases: ["vue.js", vuejs, vue]
+  - slug: svelte
+    name: Svelte
+    category: framework
+    parent: frontend
+    aliases: [sveltekit]
+  - slug: nextjs
+    name: Next.js
+    category: framework
+    parent: frontend
+    aliases: ["next.js", nextjs]
+  - slug: html
+    name: HTML
+    category: language
+    parent: frontend
+    aliases: [html5]
+  - slug: css
+    name: CSS
+    category: language
+    parent: frontend
+    aliases: [css3, sass, scss, less]
+  - slug: tailwind
+    name: Tailwind CSS
+    category: framework
+    parent: frontend
+    aliases: [tailwindcss, tailwind]
+  - slug: webpack
+    name: Webpack
+    category: tool
+    parent: frontend
+    aliases: [vite, rollup]
+
+  # ------------------------------------------------------------------ #
+  # Mobile
+  # ------------------------------------------------------------------ #
+  - slug: android
+    name: Android
+    category: framework
+    parent: mobile
+  - slug: ios
+    name: iOS
+    category: framework
+    parent: mobile
+    aliases: [swiftui, uikit]
+  - slug: react-native
+    name: React Native
+    category: framework
+    parent: mobile
+    aliases: ["react-native"]
+  - slug: flutter
+    name: Flutter
+    category: framework
+    parent: mobile
+    aliases: [dart]
+
+  # ------------------------------------------------------------------ #
+  # Databases
+  # ------------------------------------------------------------------ #
+  - slug: postgresql
+    name: PostgreSQL
+    category: database
+    parent: databases
+    aliases: [postgres, psql, "postgre sql"]
+    weight: 1.1
+  - slug: mysql
+    name: MySQL
+    category: database
+    parent: databases
+    aliases: [mariadb]
+  - slug: sqlite
+    name: SQLite
+    category: database
+    parent: databases
+  - slug: mongodb
+    name: MongoDB
+    category: database
+    parent: databases
+    aliases: [mongo]
+  - slug: redis
+    name: Redis
+    category: database
+    parent: databases
+  - slug: elasticsearch
+    name: Elasticsearch
+    category: database
+    parent: databases
+    aliases: [opensearch, elastic search, elk]
+  - slug: cassandra
+    name: Cassandra
+    category: database
+    parent: databases
+  - slug: dynamodb
+    name: DynamoDB
+    category: database
+    parent: databases
+  - slug: oracle
+    name: Oracle Database
+    category: database
+    parent: databases
+    aliases: ["oracle db", "oracle database"]
+  - slug: sqlserver
+    name: SQL Server
+    category: database
+    parent: databases
+    aliases: ["ms sql", "mssql", "sql server"]
+  - slug: clickhouse
+    name: ClickHouse
+    category: database
+    parent: databases
+  - slug: duckdb
+    name: DuckDB
+    category: database
+    parent: databases
+  - slug: neo4j
+    name: Neo4j
+    category: database
+    parent: databases
+
+  # ------------------------------------------------------------------ #
+  # Cloud
+  # ------------------------------------------------------------------ #
+  - slug: aws
+    name: AWS
+    category: cloud
+    parent: cloud
+    aliases: ["amazon web services", ec2, s3, lambda, eks]
+    weight: 1.1
+  - slug: azure
+    name: Azure
+    category: cloud
+    parent: cloud
+    aliases: ["microsoft azure", aks]
+  - slug: gcp
+    name: GCP
+    category: cloud
+    parent: cloud
+    aliases: ["google cloud", "google cloud platform", gke, bigquery]
+  - slug: cloudflare
+    name: Cloudflare
+    category: cloud
+    parent: cloud
+  - slug: digitalocean
+    name: DigitalOcean
+    category: cloud
+    parent: cloud
+
+  # ------------------------------------------------------------------ #
+  # DevOps
+  # ------------------------------------------------------------------ #
+  - slug: docker
+    name: Docker
+    category: devops
+    parent: devops
+    aliases: [containers, containerization, podman]
+    weight: 1.1
+  - slug: kubernetes
+    name: Kubernetes
+    category: devops
+    parent: devops
+    aliases: [k8s, kubernets]
+    weight: 1.1
+  - slug: terraform
+    name: Terraform
+    category: devops
+    parent: devops
+    aliases: [opentofu, "infrastructure as code", iac]
+  - slug: ansible
+    name: Ansible
+    category: devops
+    parent: devops
+  - slug: jenkins
+    name: Jenkins
+    category: devops
+    parent: devops
+  - slug: github-actions
+    name: GitHub Actions
+    category: devops
+    parent: devops
+    aliases: ["github action"]
+  - slug: gitlab-ci
+    name: GitLab CI
+    category: devops
+    parent: devops
+    aliases: ["gitlab ci/cd", gitlab-ci]
+  - slug: cicd
+    name: CI/CD
+    category: practice
+    parent: devops
+    aliases: ["ci/cd", "continuous integration", "continuous delivery", "continuous deployment"]
+  - slug: prometheus
+    name: Prometheus
+    category: devops
+    parent: devops
+    aliases: [grafana]
+  - slug: linux
+    name: Linux
+    category: devops
+    parent: devops
+    aliases: [unix, ubuntu, debian, "red hat", rhel]
+  - slug: nginx
+    name: Nginx
+    category: devops
+    parent: devops
+  - slug: argocd
+    name: Argo CD
+    category: devops
+    parent: devops
+    aliases: [argocd, "argo cd"]
+  - slug: helm
+    name: Helm
+    category: devops
+    parent: devops
+
+  # ------------------------------------------------------------------ #
+  # Data
+  # ------------------------------------------------------------------ #
+  - slug: pandas
+    name: Pandas
+    category: data
+    parent: data
+  - slug: polars
+    name: Polars
+    category: data
+    parent: data
+  - slug: numpy
+    name: NumPy
+    category: data
+    parent: data
+  - slug: spark
+    name: Apache Spark
+    category: data
+    parent: data
+    aliases: [pyspark, "apache spark", spark]
+  - slug: kafka
+    name: Apache Kafka
+    category: data
+    parent: data
+    aliases: ["apache kafka", kafka]
+  - slug: airflow
+    name: Apache Airflow
+    category: data
+    parent: data
+    aliases: ["apache airflow", airflow]
+  - slug: dbt
+    name: dbt
+    category: data
+    parent: data
+    aliases: ["data build tool"]
+  - slug: snowflake
+    name: Snowflake
+    category: data
+    parent: data
+  - slug: databricks
+    name: Databricks
+    category: data
+    parent: data
+  - slug: flink
+    name: Apache Flink
+    category: data
+    parent: data
+    aliases: ["apache flink", flink]
+  - slug: parquet
+    name: Parquet
+    category: data
+    parent: data
+  - slug: etl
+    name: ETL
+    category: practice
+    parent: data
+    aliases: [elt, "data pipeline", "data pipelines"]
+  - slug: data-modeling
+    name: Data Modeling
+    category: practice
+    parent: data
+    aliases: ["data modelling", "dimensional modeling", "star schema"]
+  - slug: tableau
+    name: Tableau
+    category: data
+    parent: data
+    aliases: [powerbi, "power bi", looker]
+
+  # ------------------------------------------------------------------ #
+  # AI / ML
+  # ------------------------------------------------------------------ #
+  - slug: pytorch
+    name: PyTorch
+    category: data
+    parent: ai-ml
+    aliases: [torch]
+  - slug: tensorflow
+    name: TensorFlow
+    category: data
+    parent: ai-ml
+    aliases: [keras]
+  - slug: scikit-learn
+    name: scikit-learn
+    category: data
+    parent: ai-ml
+    aliases: [sklearn, "scikit learn"]
+  - slug: nlp
+    name: NLP
+    category: data
+    parent: ai-ml
+    aliases: ["natural language processing"]
+  - slug: llm
+    name: Large Language Models
+    category: data
+    parent: ai-ml
+    aliases: [llms, "large language model", "generative ai", genai, rag]
+  - slug: mlops
+    name: MLOps
+    category: practice
+    parent: ai-ml
+    aliases: [mlflow, "ml ops"]
+  - slug: statistics
+    name: Statistics
+    category: practice
+    parent: ai-ml
+    aliases: [statistical analysis, "a/b testing"]
+
+  # ------------------------------------------------------------------ #
+  # Testing
+  # ------------------------------------------------------------------ #
+  - slug: pytest
+    name: pytest
+    category: testing
+    parent: testing
+  - slug: testing
+    name: Software Testing
+    category: testing
+    parent: testing
+    aliases: ["unit testing", "unit tests", "integration testing", "test automation"]
+  - slug: selenium
+    name: Selenium
+    category: testing
+    parent: testing
+  - slug: cypress
+    name: Cypress
+    category: testing
+    parent: testing
+    aliases: [playwright]
+  - slug: jest
+    name: Jest
+    category: testing
+    parent: testing
+    aliases: [vitest]
+
+  # ------------------------------------------------------------------ #
+  # Security
+  # ------------------------------------------------------------------ #
+  - slug: security
+    name: Security
+    category: security
+    parent: security
+    aliases: ["information security", "application security", infosec, appsec]
+  - slug: penetration-testing
+    name: Penetration Testing
+    category: security
+    parent: security
+    aliases: [pentest, pentesting, "ethical hacking"]
+  - slug: siem
+    name: SIEM
+    category: security
+    parent: security
+    aliases: [splunk, "security monitoring"]
+  - slug: threat-modeling
+    name: Threat Modeling
+    category: security
+    parent: security
+    aliases: ["threat modelling"]
+  - slug: networking
+    name: Networking
+    category: security
+    parent: security
+    aliases: [tcp/ip, "network security", firewall]
+  - slug: oauth
+    name: OAuth
+    category: security
+    parent: security
+    aliases: [oidc, "openid connect", saml, jwt]
+
+  # ------------------------------------------------------------------ #
+  # Tooling and practices
+  # ------------------------------------------------------------------ #
+  - slug: git
+    name: Git
+    category: tool
+    parent: tooling
+    aliases: [github, gitlab, bitbucket, "version control"]
+  - slug: jira
+    name: Jira
+    category: tool
+    parent: tooling
+    aliases: [confluence]
+  - slug: agile
+    name: Agile
+    category: practice
+    parent: practices
+    aliases: [scrum, kanban, "agile methodologies"]
+  - slug: microservices
+    name: Microservices
+    category: practice
+    parent: practices
+    aliases: ["micro services", "microservice architecture"]
+  - slug: ddd
+    name: Domain-Driven Design
+    category: practice
+    parent: practices
+    aliases: ["domain driven design", ddd]
+  - slug: code-review
+    name: Code Review
+    category: practice
+    parent: practices
+    aliases: ["peer review", "pull request"]
+  - slug: system-design
+    name: System Design
+    category: practice
+    parent: practices
+    aliases: ["software architecture", "architecture design", "distributed systems"]
+  - slug: observability
+    name: Observability
+    category: practice
+    parent: practices
+    aliases: [monitoring, opentelemetry, tracing, "log aggregation"]
+  - slug: mainframe
+    name: Mainframe
+    category: tool
+    parent: tooling
+    aliases: [zos, "z/os", jcl, cics]
+
+  # ------------------------------------------------------------------ #
+  # Soft skills
+  # ------------------------------------------------------------------ #
+  - slug: communication
+    name: Communication
+    category: soft_skill
+    parent: soft-skills
+    aliases: ["communication skills", "written communication"]
+  - slug: teamwork
+    name: Teamwork
+    category: soft_skill
+    parent: soft-skills
+    aliases: [collaboration, "team player"]
+  - slug: mentoring
+    name: Mentoring
+    category: soft_skill
+    parent: soft-skills
+    aliases: [coaching, "mentor junior"]
+  - slug: english
+    name: English
+    category: soft_skill
+    parent: soft-skills
+    aliases: ["english language", "fluent english", "business english"]

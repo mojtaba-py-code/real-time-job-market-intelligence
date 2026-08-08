@@ -1,0 +1,184 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "real-time-job-market-intelligence"
+version = "1.0.0"
+description = "Real-Time Job Market Intelligence Platform - ingestion, NLP, analytics and API for public job-market data"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Mojtaba Karimi" }]
+keywords = ["job-market", "data-engineering", "etl", "nlp", "analytics", "fastapi"]
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "Topic :: Database",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+]
+
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.34",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.7",
+    "email-validator>=2.2",
+    "SQLAlchemy[asyncio]>=2.0.36",
+    "alembic>=1.14",
+    "aiosqlite>=0.20",
+    "greenlet>=3.0",
+    "httpx>=0.28",
+    "typer>=0.15",
+    "rich>=13.9",
+    "PyYAML>=6.0",
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "pyarrow>=17.0",
+    "duckdb>=1.1",
+    "argon2-cffi>=23.1",
+    "jinja2>=3.1",
+]
+
+[project.optional-dependencies]
+postgres = ["asyncpg>=0.30"]
+redis = ["redis>=5.2"]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=6.0",
+    "respx>=0.21",
+    "fakeredis>=2.26",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "bandit[toml]>=1.8",
+    "pip-audit>=2.7",
+    "types-PyYAML",
+]
+
+[project.urls]
+Homepage = "https://github.com/mojtaba-py-code"
+Documentation = "https://github.com/mojtaba-py-code"
+
+[project.scripts]
+jobintel = "app.cli.main:main"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+exclude = ["tests*", "data*", "dashboard*"]
+
+[tool.setuptools.package-data]
+app = ["py.typed"]
+
+# --------------------------------------------------------------------------- #
+# Linting
+# --------------------------------------------------------------------------- #
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["migrations/versions", ".venv", "build", "dist"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "C4",   # comprehensions
+    "UP",   # pyupgrade
+    "S",    # bandit-ish security rules
+    "ASYNC",
+    "T20",  # no print in library code
+    "SIM",
+    "RET",
+    "PTH",
+    "N",
+    "A",    # builtin shadowing
+    "DTZ",  # timezone aware datetimes
+    "RUF",
+]
+ignore = [
+    "S101",  # assert is fine (tests + internal invariants)
+    "B008",  # FastAPI/Typer rely on calls in default arguments
+    "N818",  # exception naming convention differs from ours
+    "RUF012",# mutable class attrs are annotated deliberately
+    "SIM108",# ternaries are not always more readable
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S105", "S106", "S311", "T20", "E501"]
+"benchmarks/*" = ["T20", "S311"]
+"scripts/*" = ["T20"]
+"app/cli/*" = ["T20"]
+"app/ingestion/sources/synthetic_source.py" = ["S311"]
+"app/analytics/*" = ["S311"]
+# DuckDB reads a local Parquet dataset. The only interpolated fragments are
+# constant clauses selected in code; every value is bound as a parameter.
+"app/storage/parquet.py" = ["S608"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+# --------------------------------------------------------------------------- #
+# Typing
+# --------------------------------------------------------------------------- #
+[tool.mypy]
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = false
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+strict_equality = true
+warn_return_any = true
+ignore_missing_imports = true
+exclude = ["migrations/versions", "build", "dist"]
+
+[[tool.mypy.overrides]]
+module = ["tests.*", "benchmarks.*", "scripts.*"]
+disallow_untyped_defs = false
+
+# --------------------------------------------------------------------------- #
+# Tests
+# --------------------------------------------------------------------------- #
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-q --strict-markers --strict-config"
+markers = [
+    "unit: fast isolated unit tests",
+    "integration: tests touching database/cache/API layers",
+    "e2e: full pipeline tests",
+    "performance: throughput benchmarks (skipped unless JOBINTEL_RUN_PERF=1)",
+    "security: security regression tests",
+]
+filterwarnings = ["error::RuntimeWarning"]
+
+[tool.coverage.run]
+source = ["app"]
+branch = true
+omit = ["*/__main__.py"]
+
+[tool.coverage.report]
+precision = 1
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@(abc\\.)?abstractmethod",
+    "class .*\\(Protocol\\):",
+    "\\.\\.\\.",
+]
+
+[tool.bandit]
+exclude_dirs = ["tests", "benchmarks", "build", "dist", ".venv"]
+skips = ["B101"]

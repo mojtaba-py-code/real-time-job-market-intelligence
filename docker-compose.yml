@@ -1,0 +1,119 @@
+# Full local environment: `docker compose up`
+#
+# Services
+#   postgres   operational database
+#   redis      cache, rate-limit counters and the event stream
+#   migrate    one-shot Alembic upgrade, everything else waits for it
+#   api        HTTP API + dashboard on http://localhost:8000
+#   worker     scheduler (ingestion, expiry, analytics, alerts) + event consumer
+#
+# Passwords here are development defaults. Override every JOBINTEL_* value
+# through a .env file before running this anywhere that matters.
+
+name: jobintel
+
+x-app-environment: &app-environment
+  JOBINTEL_ENVIRONMENT: ${JOBINTEL_ENVIRONMENT:-development}
+  JOBINTEL_SECURITY__SECRET_KEY: ${JOBINTEL_SECURITY__SECRET_KEY:-dev-only-secret-key-change-me-before-deploying-anywhere}
+  JOBINTEL_DATABASE__URL: postgresql+asyncpg://jobintel:${POSTGRES_PASSWORD:-jobintel}@postgres:5432/jobintel
+  JOBINTEL_CACHE__URL: redis://redis:6379/0
+  JOBINTEL_EVENTS__BACKEND: redis
+  JOBINTEL_OBSERVABILITY__LOG_FORMAT: json
+  JOBINTEL_OBSERVABILITY__LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: jobintel
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-jobintel}
+      POSTGRES_DB: jobintel
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobintel -d jobintel"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # Not published by default: nothing outside the compose network needs it.
+    expose:
+      - "5432"
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    expose:
+      - "6379"
+
+  migrate:
+    build:
+      context: .
+      target: runtime
+    environment:
+      <<: *app-environment
+    command: ["python", "-m", "alembic", "upgrade", "head"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      target: runtime
+    restart: unless-stopped
+    environment:
+      <<: *app-environment
+      JOBINTEL_API__HOST: 0.0.0.0
+      JOBINTEL_API__CORS_ORIGINS: '["http://localhost:8000"]'
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - job-data:/data
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health/live"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    security_opt:
+      - no-new-privileges:true
+
+  worker:
+    build:
+      context: .
+      target: runtime
+    restart: unless-stopped
+    environment:
+      <<: *app-environment
+      JOBINTEL_SCHEDULER__INGESTION_INTERVAL_SECONDS: ${INGESTION_INTERVAL:-900}
+    command: ["python", "-m", "app", "worker"]
+    volumes:
+      - job-data:/data
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  postgres-data:
+  redis-data:
+  job-data:

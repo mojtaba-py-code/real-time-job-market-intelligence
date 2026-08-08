@@ -1,0 +1,220 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONUNBUFFERED: "1"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  JOBINTEL_ENVIRONMENT: testing
+  JOBINTEL_SECURITY__SECRET_KEY: ci-secret-key-not-used-outside-this-workflow-000000
+
+permissions:
+  contents: read
+
+jobs:
+  # ------------------------------------------------------------------ #
+  # Static analysis: fast, runs on every push, blocks everything else.
+  # ------------------------------------------------------------------ #
+  lint:
+    name: Lint and type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,postgres,redis]"
+
+      - name: Ruff (lint)
+        run: ruff check app tests benchmarks scripts
+
+      - name: Ruff (format)
+        run: ruff format --check app tests benchmarks scripts
+
+      - name: MyPy
+        run: mypy app
+
+  # ------------------------------------------------------------------ #
+  # Tests on SQLite (fast) and PostgreSQL + Redis (production shape).
+  # ------------------------------------------------------------------ #
+  test:
+    name: Tests (${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: jobintel
+          POSTGRES_PASSWORD: jobintel
+          POSTGRES_DB: jobintel_test
+        options: >-
+          --health-cmd "pg_isready -U jobintel"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,postgres,redis]"
+
+      - name: Unit and integration tests
+        run: pytest -q --cov=app --cov-report=xml --cov-report=term-missing
+
+      - name: Migrations apply cleanly on PostgreSQL
+        env:
+          JOBINTEL_DATABASE__URL: postgresql+asyncpg://jobintel:jobintel@localhost:5432/jobintel_test
+        run: |
+          python -m alembic upgrade head
+          python -m alembic downgrade base
+          python -m alembic upgrade head
+
+      - name: Pipeline smoke test against PostgreSQL
+        env:
+          JOBINTEL_DATABASE__URL: postgresql+asyncpg://jobintel:jobintel@localhost:5432/jobintel_test
+          JOBINTEL_CACHE__URL: redis://localhost:6379/0
+          JOBINTEL_EVENTS__BACKEND: redis
+        run: |
+          python -m app taxonomy --sync
+          python -m app ingest --source synthetic --limit 200
+          python -m app report --window-days 180
+          python -m app quality
+
+      - name: Upload coverage
+        if: matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.xml
+          retention-days: 7
+
+  # ------------------------------------------------------------------ #
+  # Security scanning: code, dependencies and secrets.
+  # ------------------------------------------------------------------ #
+  security:
+    name: Security scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,postgres,redis]"
+
+      - name: Bandit (static security analysis)
+        run: bandit -c pyproject.toml -r app -ll
+
+      - name: pip-audit (known vulnerabilities)
+        run: pip-audit --strict --ignore-vuln GHSA-4xh5-x5gv-qwph || pip-audit
+
+      - name: Security regression tests
+        run: pytest tests/security -q
+
+      - name: No secrets in the tree
+        run: |
+          # Fail on obvious credential material committed by accident.
+          if grep -rInE "(AKIA[0-9A-Z]{16}|-----BEGIN (RSA|OPENSSH|EC) PRIVATE KEY-----)" \
+              --exclude-dir=.git --exclude-dir=.venv . ; then
+            echo "::error::possible credential found in the working tree"
+            exit 1
+          fi
+          if [ -f .env ]; then
+            echo "::error::.env must never be committed"
+            exit 1
+          fi
+
+  # ------------------------------------------------------------------ #
+  # Build the image and prove it starts and answers.
+  # ------------------------------------------------------------------ #
+  docker:
+    name: Docker build and smoke test
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: runtime
+          load: true
+          tags: jobintel:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Container starts and serves /health
+        run: |
+          docker run -d --name jobintel-ci \
+            -e JOBINTEL_ENVIRONMENT=development \
+            -e JOBINTEL_SECURITY__SECRET_KEY=ci-secret-key-000000000000000000000000000000 \
+            -e JOBINTEL_DATABASE__URL=sqlite+aiosqlite:////data/jobintel.db \
+            -p 8000:8000 jobintel:ci
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/health/live > /dev/null; then
+              echo "container is healthy after ${attempt}s"
+              curl -fsS http://localhost:8000/version
+              docker rm -f jobintel-ci
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::container did not become healthy"
+          docker logs jobintel-ci
+          docker rm -f jobintel-ci
+          exit 1
+
+      - name: CLI works inside the image
+        run: |
+          docker run --rm jobintel:ci python -m app version
+          docker run --rm jobintel:ci python -m app taxonomy
