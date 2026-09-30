@@ -16,7 +16,7 @@ from app.core.security import GeneratedApiKey, generate_api_key, verify_secret
 from app.core.timeutils import ensure_utc, utcnow
 from app.models.enums import ROLE_SCOPES, Scope, UserRole
 from app.storage.models import ApiKey
-from app.storage.repositories.base import BaseRepository
+from app.storage.repositories.base import BaseRepository, affected_rows
 
 
 @dataclass(frozen=True, slots=True)
@@ -85,11 +85,11 @@ class ApiKeyRepository(BaseRepository):
         result = await self.session.execute(
             update(ApiKey).where(ApiKey.key_id == key_id).values(active=False)
         )
-        return bool(result.rowcount)
+        return affected_rows(result) > 0
 
     async def delete(self, key_id: str) -> bool:
         result = await self.session.execute(delete(ApiKey).where(ApiKey.key_id == key_id))
-        return bool(result.rowcount)
+        return affected_rows(result) > 0
 
     async def list_keys(self, *, include_inactive: bool = False) -> list[ApiKey]:
         stmt = select(ApiKey).order_by(ApiKey.created_at.desc())

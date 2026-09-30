@@ -17,7 +17,7 @@ from app.storage.mappers import (
     source_state_to_values,
 )
 from app.storage.models import IngestionRunRecord, JobSource, RejectedRecordRow
-from app.storage.repositories.base import BaseRepository
+from app.storage.repositories.base import BaseRepository, affected_rows
 
 
 class SourceStateRepository(BaseRepository):
@@ -59,7 +59,7 @@ class SourceStateRepository(BaseRepository):
         result = await self.session.execute(
             update(JobSource).where(JobSource.source == source).values(enabled=enabled)
         )
-        return bool(result.rowcount)
+        return affected_rows(result) > 0
 
 
 class IngestionRunRepository(BaseRepository):
@@ -110,7 +110,7 @@ class IngestionRunRepository(BaseRepository):
         result = await self.session.execute(
             delete(IngestionRunRecord).where(IngestionRunRecord.started_at < older_than)
         )
-        return result.rowcount or 0
+        return affected_rows(result)
 
     async def summary(self, *, since: datetime) -> dict[str, float]:
         """Aggregate throughput metrics over recent runs."""
@@ -180,7 +180,7 @@ class RejectedRecordRepository(BaseRepository):
         result = await self.session.execute(
             delete(RejectedRecordRow).where(RejectedRecordRow.rejected_at < cutoff)
         )
-        return result.rowcount or 0
+        return affected_rows(result)
 
 
 __all__ = [

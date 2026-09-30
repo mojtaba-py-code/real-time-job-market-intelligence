@@ -62,5 +62,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD curl -fsS http://127.0.0.1:8000/health/live || exit 1
 
 # The API is the default; the worker container overrides the command.
-CMD ["uvicorn", "app.api.app:create_app", "--factory", \
-     "--host", "0.0.0.0", "--port", "8000", "--log-config", "/dev/null"]
+# `jobintel serve` starts uvicorn with log_config=None, so the application's
+# structured logging stays in charge. (uvicorn 0.54 rejects the old
+# `--log-config /dev/null` workaround as an empty file.)
+CMD ["python", "-m", "app", "serve", "--host", "0.0.0.0", "--port", "8000"]

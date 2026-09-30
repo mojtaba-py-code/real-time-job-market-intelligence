@@ -2,11 +2,23 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
+from sqlalchemy.engine import CursorResult, Result
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import BoundLogger, get_logger
+
+
+def affected_rows(result: Result[Any]) -> int:
+    """Number of rows an UPDATE or DELETE matched.
+
+    ``AsyncSession.execute`` is typed to return ``Result``, but for DML the
+    object is a ``CursorResult``, which is the class that carries ``rowcount``.
+    SQLAlchemy 2.1 no longer types ``rowcount`` on ``Result``, so it is read
+    through the concrete class here rather than at every call site.
+    """
+    return int(cast("CursorResult[Any]", result).rowcount or 0)
 
 
 class BaseRepository:
@@ -49,4 +61,4 @@ class BaseRepository:
 #: us comfortably below the SQLite ceiling of 999.
 MAX_BIND_PARAMS = 400
 
-__all__ = ["MAX_BIND_PARAMS", "BaseRepository"]
+__all__ = ["MAX_BIND_PARAMS", "BaseRepository", "affected_rows"]

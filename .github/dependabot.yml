@@ -1,0 +1,27 @@
+# Weekly dependency updates. Routine minor/patch bumps arrive grouped in one PR
+# so the queue stays reviewable; security updates still arrive on their own.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      python-minor-and-patch:
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: weekly
+    ignore:
+      # The image runs the Python version CI tests. Moving to a new minor
+      # Python is a deliberate upgrade, not a routine bump; patches still come.
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]

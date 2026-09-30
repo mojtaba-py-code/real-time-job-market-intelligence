@@ -8,7 +8,7 @@ from app.core.timeutils import utcnow
 from app.models.profiles import CandidateProfile
 from app.storage.mappers import profile_to_domain, profile_to_values
 from app.storage.models import CandidateProfileRow
-from app.storage.repositories.base import BaseRepository
+from app.storage.repositories.base import BaseRepository, affected_rows
 
 
 class ProfileRepository(BaseRepository):
@@ -60,7 +60,7 @@ class ProfileRepository(BaseRepository):
         result = await self.session.execute(
             delete(CandidateProfileRow).where(CandidateProfileRow.id == profile_id)
         )
-        return bool(result.rowcount)
+        return affected_rows(result) > 0
 
 
 __all__ = ["ProfileRepository"]

@@ -14,7 +14,7 @@ from app.storage.mappers import (
     notification_to_domain,
 )
 from app.storage.models import AlertRuleRow, NotificationRow
-from app.storage.repositories.base import BaseRepository
+from app.storage.repositories.base import BaseRepository, affected_rows
 
 
 class AlertRepository(BaseRepository):
@@ -40,7 +40,7 @@ class AlertRepository(BaseRepository):
 
     async def delete(self, rule_id: str) -> bool:
         result = await self.session.execute(delete(AlertRuleRow).where(AlertRuleRow.id == rule_id))
-        return bool(result.rowcount)
+        return affected_rows(result) > 0
 
     async def list_rules(
         self, *, owner: str | None = None, enabled_only: bool = False, limit: int = 200
@@ -103,7 +103,7 @@ class AlertRepository(BaseRepository):
             .where(NotificationRow.read_at.is_(None))
             .values(read_at=utcnow())
         )
-        return bool(result.rowcount)
+        return affected_rows(result) > 0
 
     async def unread_count(self) -> int:
         stmt = (

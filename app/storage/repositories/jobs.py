@@ -20,7 +20,7 @@ from app.models.enums import DuplicateKind, JobStatus
 from app.models.job import NormalizedJob
 from app.storage.mappers import job_to_domain, job_to_values
 from app.storage.models import Job, JobSkill, SalaryRecord
-from app.storage.repositories.base import MAX_BIND_PARAMS, BaseRepository
+from app.storage.repositories.base import MAX_BIND_PARAMS, BaseRepository, affected_rows
 
 SortField = Literal["published_at", "first_seen_at", "last_seen_at", "salary", "relevance", "title"]
 
@@ -266,7 +266,7 @@ class JobRepository(BaseRepository):
             result = await self.session.execute(
                 update(Job).where(Job.id.in_(chunk)).values(last_seen_at=moment)
             )
-            affected += result.rowcount or 0
+            affected += affected_rows(result)
         return affected
 
     async def expire_stale(self, *, cutoff: datetime, source: str | None = None) -> int:
@@ -280,7 +280,7 @@ class JobRepository(BaseRepository):
         if source:
             stmt = stmt.where(Job.source == source)
         result = await self.session.execute(stmt)
-        return result.rowcount or 0
+        return affected_rows(result)
 
     async def reactivate(self, job_ids: list[str]) -> int:
         """Bring expired postings back to life when a source re-lists them."""
@@ -292,12 +292,12 @@ class JobRepository(BaseRepository):
             .where(Job.status == JobStatus.EXPIRED.value)
             .values(status=JobStatus.ACTIVE.value, expired_at=None, updated_at=utcnow())
         )
-        return result.rowcount or 0
+        return affected_rows(result)
 
     async def delete_by_source(self, source: str) -> int:
         """Remove every posting from a source (used by ``jobintel purge``)."""
         result = await self.session.execute(delete(Job).where(Job.source == source))
-        return result.rowcount or 0
+        return affected_rows(result)
 
     # ------------------------------------------------------------------ #
     # Queries

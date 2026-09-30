@@ -8,7 +8,7 @@ statistics testable without a database.
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Any
+from typing import Any, TypeVarTuple
 
 from sqlalchemy import ColumnElement, Select, case, func, select
 
@@ -17,6 +17,8 @@ from app.models.analytics import AnalyticsFilter
 from app.storage.models import Company, Job, JobSkill, SalaryRecord, Skill
 from app.storage.repositories.base import BaseRepository
 from app.storage.repositories.jobs import LIVE_STATUSES
+
+_Ts = TypeVarTuple("_Ts")
 
 #: Postings are dated by their publication timestamp, falling back to the
 #: moment we first saw them when the source does not provide one.
@@ -38,7 +40,7 @@ class AnalyticsRepository(BaseRepository):
     # ------------------------------------------------------------------ #
     # Filtering
     # ------------------------------------------------------------------ #
-    def _base_filters(self, stmt: Select[Any], flt: AnalyticsFilter) -> Select[Any]:
+    def _base_filters(self, stmt: Select[*_Ts], flt: AnalyticsFilter) -> Select[*_Ts]:
         stmt = stmt.where(Job.status.in_(LIVE_STATUSES)).where(Job.duplicate_of.is_(None))
         start, end = self.window_bounds(flt)
         stmt = stmt.where(start <= EVENT_DATE)
@@ -382,7 +384,9 @@ class AnalyticsRepository(BaseRepository):
         )
         stmt = self._base_filters(stmt, flt).limit(limit)
         rows = (await self.session.execute(stmt)).all()
-        return [(str(row[0]), float(row[1])) for row in rows]
+        # The WHERE clause already excludes NULL midpoints; the comprehension
+        # repeats the check so the type checker can see it too.
+        return [(str(key), float(mid)) for key, mid in rows if mid is not None]
 
     async def salary_samples_for_skill(
         self, slug: str, flt: AnalyticsFilter, *, limit: int = 20_000
