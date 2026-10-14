@@ -22,6 +22,9 @@ from app.storage.mappers import job_to_domain, job_to_values
 from app.storage.models import Job, JobSkill, SalaryRecord
 from app.storage.repositories.base import MAX_BIND_PARAMS, BaseRepository, affected_rows
 
+#: Upper bound on free-text words turned into LIKE filters.
+MAX_SEARCH_TERMS = 12
+
 SortField = Literal["published_at", "first_seen_at", "last_seen_at", "salary", "relevance", "title"]
 
 LIVE_STATUSES: tuple[str, ...] = (JobStatus.ACTIVE.value, JobStatus.UPDATED.value)
@@ -343,8 +346,11 @@ class JobRepository(BaseRepository):
         if query.first_seen_after:
             stmt = stmt.where(Job.first_seen_at >= query.first_seen_after)
         if query.text:
-            needle = f"%{canonical_key(query.text)}%"
-            stmt = stmt.where(Job.search_text.like(needle))
+            # Every word must appear, in any order. One LIKE over the whole
+            # query made it a phrase search: the README's own example,
+            # "python berlin", matched nothing on real data.
+            for term in canonical_key(query.text).split()[:MAX_SEARCH_TERMS]:
+                stmt = stmt.where(Job.search_text.like(f"%{term}%"))
         if query.skills:
             slugs = tuple(dict.fromkeys(query.skills))
             if query.require_all_skills:

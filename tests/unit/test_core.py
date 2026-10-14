@@ -49,6 +49,15 @@ class TestText:
     def test_strip_html_survives_malformed_markup(self) -> None:
         assert "Python" in strip_html("<p>Python <<>> developer")
 
+    def test_strip_html_decodes_entity_escaped_markup(self) -> None:
+        # Greenhouse's job-board API sends descriptions this way; the tags
+        # used to survive as literal text in every stored description.
+        escaped = "&lt;h2&gt;&lt;strong&gt;About the Role&lt;/strong&gt;&lt;/h2&gt;&lt;p&gt;Python &amp;amp; Go&lt;/p&gt;"
+        text = strip_html(escaped)
+        assert "<" not in text
+        assert "About the Role" in text
+        assert "Python & Go" in text
+
     def test_clean_text_normalizes_entities_and_whitespace(self) -> None:
         assert clean_text("<p>Hello&nbsp;&amp;   welcome</p>") == "Hello & welcome"
 

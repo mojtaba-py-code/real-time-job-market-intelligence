@@ -61,13 +61,18 @@ class SkillTaxonomy:
 
     def __post_init__(self) -> None:
         index: dict[str, str] = {}
+        # Exact spellings first. A canonical key drops symbols ("C++" -> "c"),
+        # so registering it in the same pass let C++ claim the bare letter "c"
+        # (it is declared before C) and every stray "c" in a posting counted
+        # as C++. First declaration still wins within each pass.
         for skill in self.skills.values():
             for form in skill.surface_forms:
-                key = canonical_key(form) or form.lower()
-                # First declaration wins, so a specific skill cannot be
-                # shadowed by a later, broader alias.
-                index.setdefault(key, skill.slug)
                 index.setdefault(form.lower(), skill.slug)
+        for skill in self.skills.values():
+            for form in skill.surface_forms:
+                key = canonical_key(form)
+                if key:
+                    index.setdefault(key, skill.slug)
         self._alias_index = index
 
     # ------------------------------------------------------------------ #

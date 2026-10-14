@@ -7,6 +7,7 @@ import asyncio
 import pytest
 
 from app.core.config import CacheSettings, EventSettings, Settings
+from app.core.text import canonical_key
 from app.core.timeutils import days_ago
 from app.events.bus import (
     InMemoryEventBus,
@@ -259,6 +260,26 @@ class TestSearch:
         assert len(result.jobs) <= 5
         if result.jobs:
             assert all(job.id in result.scores for job in result.jobs)
+
+    async def test_multi_word_queries_match_words_in_any_order(
+        self, database: Database, normalized_jobs: list[NormalizedJob]
+    ) -> None:
+        """``search "python berlin"`` is the README's own example.
+
+        It used to be a single ``LIKE '%python berlin%'`` phrase, which a real
+        corpus almost never contains. Company-then-title is the reverse of the
+        stored order, so only per-word matching finds the posting.
+        """
+        await _store(database, normalized_jobs)
+        job = normalized_jobs[0]
+        query = (
+            f"{canonical_key(job.company_name).split()[0]} {canonical_key(job.title).split()[0]}"
+        )
+        async with database.read_session() as session:
+            backend = SqlSearchBackend(JobRepository(session))
+            result = await backend.search(SearchRequest(query=query, limit=200))
+
+        assert job.id in {found.id for found in result.jobs}
 
     async def test_backend_selection_matches_the_dialect(self, database: Database) -> None:
         async with database.read_session() as session:

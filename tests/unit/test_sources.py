@@ -305,6 +305,72 @@ class TestCompanyCareerSource:
         assert job.source_kind is SourceKind.CAREER_PAGE
         assert job.location == "Remote"
 
+    @respx.mock
+    async def test_greenhouse_preset_keeps_content_true(
+        self, permissive_client: SafeHttpClient
+    ) -> None:
+        """Without ``?content=true`` Greenhouse omits every description.
+
+        httpx replaces a URL's query string when ``params`` is passed, so the
+        preset used to lose it and a live run rejected 100% of Greenhouse
+        postings as "description is missing". The route only matches with the
+        parameter present.
+        """
+        route = respx.get(
+            "https://boards-api.greenhouse.io/v1/boards/acme/jobs", params={"content": "true"}
+        ).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "jobs": [
+                        {
+                            "id": 8,
+                            "title": "Data Engineer",
+                            "content": "Python and Airflow.",
+                            "absolute_url": "https://boards.greenhouse.io/acme/jobs/8",
+                        }
+                    ]
+                },
+            )
+        )
+        source = CompanyCareerSource(
+            name="acme_careers",
+            options={"provider": "greenhouse", "board": "acme"},
+            client=permissive_client,
+        )
+        batch = await source.fetch_jobs(SourceContext(limit=5))
+        await permissive_client.aclose()
+
+        assert route.called
+        assert batch.jobs[0].description == "Python and Airflow."
+
+
+class TestQueryStringMerging:
+    @respx.mock
+    async def test_paging_params_are_added_to_the_url_query(
+        self, permissive_client: SafeHttpClient
+    ) -> None:
+        seen: list[httpx.URL] = []
+
+        def respond(request: httpx.Request) -> httpx.Response:
+            seen.append(request.url)
+            return httpx.Response(200, json={"results": []})
+
+        respx.get("https://127.0.0.1/api/jobs").mock(side_effect=respond)
+        source = ApiJobSource(
+            name="api",
+            options={
+                "url": "https://127.0.0.1/api/jobs?country=de",
+                "records_path": "results",
+                "pagination": {"mode": "page", "size": 50},
+            },
+            client=permissive_client,
+        )
+        await source.fetch_jobs(SourceContext(limit=10))
+        await permissive_client.aclose()
+
+        assert dict(seen[0].params) == {"country": "de", "page": "1", "limit": "50"}
+
 
 class TestDatasetSource:
     def _write(self, path: Path, rows: list[dict[str, object]]) -> None:

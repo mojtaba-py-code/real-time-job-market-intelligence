@@ -310,8 +310,12 @@ class SafeHttpClient:
         headers: dict[str, str] | None,
         params: dict[str, Any] | None,
     ) -> HttpResponse:
-        current = url
-        for hop in range(MAX_REDIRECTS + 1):
+        # Fold ``params`` into the URL here: httpx *replaces* a URL's own query
+        # string when ``params`` is passed (even ``{}``), which silently dropped
+        # ``?content=true`` from the Greenhouse preset - and with it every job
+        # description. Merging up front also lets robots.txt see the real URL.
+        current = str(httpx.URL(url).copy_merge_params(params)) if params else url
+        for _hop in range(MAX_REDIRECTS + 1):
             validated = await self._guard.validate(current)
             if not await self._robots.is_allowed(self._client, validated):
                 raise RobotsDisallowedError(
@@ -321,9 +325,7 @@ class SafeHttpClient:
             await self._limiter.acquire(validated.host)
 
             async with self._semaphore:
-                response = await self._send(
-                    current, headers=headers, params=params if hop == 0 else None
-                )
+                response = await self._send(current, headers=headers)
 
             if response.status_code in (301, 302, 303, 307, 308):
                 location = response.headers.get("location")
@@ -346,17 +348,11 @@ class SafeHttpClient:
             f"too many redirects while fetching {url}", details={"max": MAX_REDIRECTS}
         )
 
-    async def _send(
-        self,
-        url: str,
-        *,
-        headers: dict[str, str] | None,
-        params: dict[str, Any] | None,
-    ) -> HttpResponse:
+    async def _send(self, url: str, *, headers: dict[str, str] | None) -> HttpResponse:
         budget = self._settings.max_response_bytes
         chunks: list[bytes] = []
         received = 0
-        request = self._client.build_request("GET", url, headers=headers, params=params)
+        request = self._client.build_request("GET", url, headers=headers)
         response = await self._client.send(request, stream=True)
         try:
             declared = response.headers.get("content-length")

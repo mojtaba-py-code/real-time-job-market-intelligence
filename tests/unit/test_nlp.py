@@ -53,6 +53,12 @@ class TestTaxonomy:
         assert taxonomy.resolve("k8s").slug == "kubernetes"  # type: ignore[attr-defined]
         assert taxonomy.resolve("postgres").slug == "postgresql"  # type: ignore[attr-defined]
 
+    def test_symbol_names_do_not_claim_a_bare_letter(self, taxonomy: object) -> None:
+        # canonical_key("C++") is "c"; it used to map the letter to C++.
+        assert taxonomy.resolve("c").slug == "c"  # type: ignore[attr-defined]
+        assert taxonomy.resolve("c++").slug == "cpp"  # type: ignore[attr-defined]
+        assert taxonomy.resolve("C#").slug == "csharp"  # type: ignore[attr-defined]
+
     def test_hierarchy_is_navigable(self, taxonomy: object) -> None:
         ancestors = taxonomy.ancestors("python")  # type: ignore[attr-defined]
         assert "languages" in ancestors
@@ -88,6 +94,12 @@ class TestSkillExtraction:
     def test_ambiguous_names_need_context(self, extractor: TaxonomySkillExtractor) -> None:
         assert not any(s.slug == "go" for s in extractor.extract("We go to the office daily."))
         assert any(s.slug == "go" for s in extractor.extract("Stack: Python, Go, Rust"))
+
+    def test_a_stray_letter_c_is_not_cpp(self, extractor: TaxonomySkillExtractor) -> None:
+        text = "We raised a Series C round. Our team works across plans A, B and C."
+        assert not any(s.slug == "cpp" for s in extractor.extract(text))
+        found = {s.slug for s in extractor.extract("Stack: C++, C# and Python")}
+        assert {"cpp", "csharp"} <= found
 
     def test_title_matches_raise_confidence(self, extractor: TaxonomySkillExtractor) -> None:
         from_body = {s.slug: s for s in extractor.extract(DESCRIPTION)}

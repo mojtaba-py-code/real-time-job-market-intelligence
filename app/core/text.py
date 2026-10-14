@@ -21,6 +21,7 @@ _ZERO_WIDTH_RE = re.compile("[\u200b-\u200f\u202a-\u202e\u2060\ufeff\u00ad]")
 _TOKEN_RE = re.compile(r"[a-z0-9][a-z0-9+#.\-_/]*", re.IGNORECASE)
 _NON_ALNUM_RE = re.compile(r"[^a-z0-9]+")
 _URL_RE = re.compile(r"https?://\S+", re.IGNORECASE)
+_TAG_RE = re.compile(r"</?[a-z][a-z0-9]*(?:\s[^<>]*)?/?>", re.IGNORECASE)
 
 _BLOCK_TAGS = frozenset(
     {"p", "div", "li", "br", "tr", "h1", "h2", "h3", "h4", "h5", "h6", "section", "article"}
@@ -56,12 +57,7 @@ class _TextExtractor(HTMLParser):
         return "".join(self._parts)
 
 
-def strip_html(value: str) -> str:
-    """Remove HTML markup, keeping block structure as newlines."""
-    if not value:
-        return ""
-    if "<" not in value and "&" not in value:
-        return value
+def _extract_text(value: str) -> str:
     parser = _TextExtractor()
     try:
         parser.feed(value)
@@ -70,6 +66,23 @@ def strip_html(value: str) -> str:
     except Exception:
         text = re.sub(r"<[^>]+>", " ", value)
     return html.unescape(text)
+
+
+def strip_html(value: str) -> str:
+    """Remove HTML markup, keeping block structure as newlines.
+
+    Some APIs (Greenhouse among them) send the markup itself entity-escaped,
+    ``&lt;p&gt;``. The first pass decodes that into real tags, so when tags
+    are left over the text is stripped once more.
+    """
+    if not value:
+        return ""
+    if "<" not in value and "&" not in value:
+        return value
+    text = _extract_text(value)
+    if _TAG_RE.search(text):
+        text = _extract_text(text)
+    return text
 
 
 def normalize_unicode(value: str, *, form: Literal["NFC", "NFD", "NFKC", "NFKD"] = "NFKC") -> str:
